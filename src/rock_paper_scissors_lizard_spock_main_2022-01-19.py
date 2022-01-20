@@ -2,7 +2,7 @@ from datetime import *
 import random
 import copy
 
-from models import *
+from src.models import *
 
 
 # rock paper scissors lizard spock 01
@@ -87,6 +87,10 @@ def readme():
 
 
 class RockPaperScissorsLizardSpock:
+    mysql_host = "Localhost"
+    mysql_user = "swp-rubner"
+    mysql_password = "swp-rubner"
+    mysql_database = "swp_rubner"
     name = "Anonymous"
     logbook_initiator = {
         "init": {
@@ -162,7 +166,9 @@ class RockPaperScissorsLizardSpock:
                     interrupt = True
                 else:
                     com_choice = random.randint(0, len(Hand) - 1)
-                    round_temp = (self.logbook[(str(len(self.logbook) - 1) if (len(self.logbook) - 1) != 0 else "init")]["round"] + 1)
+                    round_temp = (
+                            self.logbook[(str(len(self.logbook) - 1) if (len(self.logbook) - 1) != 0 else "init")][
+                                "round"] + 1)
                     logbook_temp = self.play_sure(session_timestamp, round_temp, self.name, choice, "COM", com_choice)
                     self.insert_logbook_into_db(copy.deepcopy(logbook_temp))
                     self.logbook[str(len(self.logbook))] = copy.deepcopy(logbook_temp)
@@ -186,7 +192,7 @@ class RockPaperScissorsLizardSpock:
                     interrupt = True
                 else:
                     result = play_one_round(Hand(player_one_hand), Hand(player_two_hand)).value
-                    print("%-8s" % Hand(player_one_hand).name,end="")
+                    print("%-8s" % Hand(player_one_hand).name, end="")
                     print(" vs %-8s" % Hand(player_two_hand).name, end="")
                     print("\tresult: " + str(Result(result).name))
                     logbook_temp["session_timestamp"] = str(session_timestamp)
@@ -225,7 +231,32 @@ class RockPaperScissorsLizardSpock:
     # database-things
 
     def insert_logbook_into_db(self, logbook_temp: dict):
-        return
+        lt = logbook_temp
+        connection = mysql.connector.connect(host=self.mysql_host, user=self.mysql_user, password=self.mysql_password, database=self.mysql_database)
+        mycursor = connection.cursor()
+        sql = f'''INSERT INTO rpsls_game_history(
+        	session_timestamp,
+            round,
+            player_one_name, 
+            player_one_hand, 
+            player_one_result, 
+            player_two_name, 
+            player_two_hand, 
+            player_two_result
+        )VALUES(%s,%s,%s,%s,%s,%s,%s,%s);'''
+        val = (lt["session_timestamp"],
+            lt["round"],
+            lt["player_one_name"],
+            lt["player_one_hand"],
+            lt["player_one_result"],
+            lt["player_two_name"],
+            lt["player_two_hand"],
+            lt["player_two_result"])
+        mycursor.execute(sql, val)
+        connection.commit()
+        # print(mycursor.rowcount, "record inserted.")
+
+
 
 
 if __name__ == '__main__':
